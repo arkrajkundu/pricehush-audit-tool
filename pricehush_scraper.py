@@ -3,10 +3,10 @@ from bs4 import BeautifulSoup
 import pandas as pd
 headers = {'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:80.0) Gecko/20100101 Firefox/80.0'}
 
-data = {'pricehush': [], 'price': [], 'amazon': [], 'flipkart': [], 'amazon_prices': [], 'amazon_outofstock': []}
+data = {'pricehush': [], 'price': [], 'amazon': [], 'flipkart': [], 'amazon_prices': [], 'amazon_outofstock': [], 'flipkart_prices': [], 'flipkart_outofstock': []}
 
-base_url = "https://pricehush.com/brand/acer/page/"
-total_pages = 5
+base_url = "https://pricehush.com/brand/dell/page/"
+total_pages = 6
 
 urls = []
 
@@ -71,6 +71,8 @@ for sublink in sublinks:
       
   i += 1
 
+# Extracting amazon prices
+
 for amazon_link in amazon_links:
   
   # NULL Check
@@ -98,6 +100,32 @@ for amazon_link in amazon_links:
       amazon_prices.append('NA')
       amazon_outofstock.append('No')
 
+# Extracting flipkart prices
+
+for flipkart_link in flipkart_links:
+  
+    # NULL Check
+  if(flipkart_link == 'NULL'):
+    flipkart_prices.append('NA')
+    flipkart_outofstock.append('NA')
+    continue
+  
+  r = requests.get(flipkart_link, headers=headers)
+  soup = BeautifulSoup(r.text, 'html.parser')
+  
+  prices = soup.find_all('div', class_=lambda x: x and 'Nx9bqj' in x and 'CxhGGd' in x)
+  stock_status = soup.select('div.Z8JjpR')
+  
+  if(len(prices)!=0):
+    flipkart_prices.append(prices[0].get_text())
+  else:
+    flipkart_prices.append('NA')
+    
+  if(len(stock_status)!=0):
+    flipkart_outofstock.append('Yes')
+  else:
+    flipkart_outofstock.append('No')
+
 # Adding lists to data object
 
 for link in sublinks:
@@ -115,10 +143,16 @@ for flipkart in flipkart_links:
 for amazon_price in amazon_prices:
   data['amazon_prices'].append(amazon_price)
   
+for flipkart_price in flipkart_prices:
+  data['flipkart_prices'].append(flipkart_price)
+  
 for amazon_oos in amazon_outofstock:
-  data['amazon_outofstock'].append(amazon_oos)  
+  data['amazon_outofstock'].append(amazon_oos)
+
+for flipkart_oos in flipkart_outofstock:
+  data['flipkart_outofstock'].append(flipkart_oos)
 
 # Exporting to excel
 
 df = pd.DataFrame.from_dict(data)
-df.to_excel("acer.xlsx", index=False)
+df.to_excel("dell.xlsx", index=False)
